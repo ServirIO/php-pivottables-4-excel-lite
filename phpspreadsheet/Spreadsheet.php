@@ -183,6 +183,17 @@ class Group implements \IteratorAggregate
 	private $showSubtotals = false;
 
 	/**
+	 * Specifies the aggregation function that applies to this value group field, according
+	 * to https://docs.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.datafield?view=openxml-2.8.1
+	 * and https://c-rex.net/projects/samples/ooxml/e1/Part4/OOXML_P4_DOCX_ST_DataConsolidateFu_topic_ID0E4HGFB.html
+	 *
+	 * An aggregation function name average|count|countNums|max|min|product|stdDev|stdDevp|sum|var|varp
+	 *
+	 * @var string
+	 */
+	private $aggregationFunction = 'sum';
+
+	/**
 	 * Constructor
 	 * @param string $name			The name of the group
 	 * @param string $sortType		One of 'ascending', descending' or 'manual'
@@ -190,7 +201,7 @@ class Group implements \IteratorAggregate
 	 * 								Leave empty to show all values
 	 * @param bool $showSubtotals	When true sub-totals are shown
 	 */
-	public function __construct( $name, $sortType = 'ascending', $values = array(), $showSubtotals = true )
+	public function __construct( $name, $sortType = 'ascending', $values = array(), $showSubtotals = true, $aggregationFunction = 'sum' )
 	{
 		if ( ! is_string( $name ) ) throw new \Exception("The group name argument is not a string");
 
@@ -198,6 +209,8 @@ class Group implements \IteratorAggregate
 		$this->sortType = $sortType;
 		$this->addVisibleValues( $values );
 		$this->showSubtotals = $showSubtotals;
+
+		$this->setAggregationFunction($aggregationFunction);
 	}
 
 	/**
@@ -319,6 +332,19 @@ class Group implements \IteratorAggregate
 				yield $key => $val;
 			}
 		})();
+	}
+
+	public function setAggregationFunction($aggregationFunction)
+	{
+		if ( ! in_array( $aggregationFunction, array( 'average', 'count', 'countNums', 'max', 'min', 'product', 'stdDev', 'stdDevp', 'sum', 'var', 'varp' ) ) )
+			throw \Exception( "The sort type MUST be one of 'ascending', 'descending' or 'manual'" );
+
+		$this->aggregationFunction = $aggregationFunction;
+	}
+
+	public function getAggregationFunction()
+	{
+		return $this->aggregationFunction;
 	}
 }
 
@@ -1320,10 +1346,13 @@ class Spreadsheet extends \PhpOffice\PhpSpreadsheet\Spreadsheet
 				{
 					$columnIndex = array_search( $column, $headers );
 					$objWriter->startElement('dataField');
-						$objWriter->writeAttribute('name', 'Sum of ' . $column );
+						$aggregationFunction = $valueGroup->getAggregationFunction();
+
+						$objWriter->writeAttribute('name', sprintf('%s of %s', ucfirst($aggregationFunction), $column) );
 						$objWriter->writeAttribute('fld', $columnIndex );
 						$objWriter->writeAttribute('baseField', 0 );
 						$objWriter->writeAttribute('baseItem', 0 );
+						$objWriter->writeAttribute('subtotal', $aggregationFunction );
 					$objWriter->endElement();
 				}
 			}
