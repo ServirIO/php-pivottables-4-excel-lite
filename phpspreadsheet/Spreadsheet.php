@@ -506,6 +506,7 @@ class Spreadsheet extends \PhpOffice\PhpSpreadsheet\Spreadsheet
 	 * @param array  $data The data to pivot.  The first row is a list of headers.
 	 * @param string $dataRange A string defining a range containing the data from which to create a pivot table
 	 * @param int	 $sheetIndex Can be the number of the sheet or its name
+	 * @param int	 $sheetOutputIndex Can be the number of the sheet to output
 	 * @param number $rowIndex (optional: default=2) The top of the array to populate
 	 * @param number $colIndex (optional: default=2) The left of the array to populate
 	 * @param Groups $rowGroups (optional: null) The names of fields that should be shown as rows
@@ -517,13 +518,14 @@ class Spreadsheet extends \PhpOffice\PhpSpreadsheet\Spreadsheet
 	 * @param bool	 $showRowGrandTotals (optional: true)
 	 * @return bool True if the pivot table has been created successfully
 	 */
-	public function addNewPivotTable( $data, $dataRange, $sheetIndex, $rowIndex = 2, $colIndex = 2, $rowGroups = null, $columnGroups = null, $valueGroups = null, $name = "PivotTable1", $dataCaption = 'Data', $showColGrandTotals = true, $showRowGrandTotals = true )
+	public function addNewPivotTable( $data, $dataRange, $sheetIndex, $sheetOutputIndex, $rowIndex = 2, $colIndex = 2, $rowGroups = null, $columnGroups = null, $valueGroups = null, $name = "PivotTable1", $dataCaption = 'Data', $showColGrandTotals = true, $showRowGrandTotals = true )
 	{
 		// Check for existing pivot tables
 
 		// Create a cache definition
 
 		$sheet = $this->getSheetFromIndex( $sheetIndex );
+		$sheetOutputIndex = $this->getSheetFromIndex( $sheetOutputIndex );
 		$date = \PhpOffice\PhpSpreadsheet\Shared\Date::PHPToExcel( time() );
 		$definitionUniqueId = uniqid();
 		// $this->definitionId++;
@@ -542,7 +544,7 @@ class Spreadsheet extends \PhpOffice\PhpSpreadsheet\Spreadsheet
 		// Create the pivot table.
 		// The table is place '7' rows after the end of the data to allow for the paging fields.
 		if ( ! $this->createPivotTable(
-				$sheet, $dataRange, $definitionUniqueId,
+				$sheet, $sheetOutputIndex, $dataRange, $definitionUniqueId,
 				$cacheId, $sharedItems, $colIndex, $rowIndex,
 				$rowGroups, $columnGroups, $valueGroups, $name,
 				$dataCaption, $showColGrandTotals, $showRowGrandTotals
@@ -975,6 +977,7 @@ class Spreadsheet extends \PhpOffice\PhpSpreadsheet\Spreadsheet
 	 * shows where code to support additional features can be added.
 	 *
 	 * @param Worksheet $sheet  			Sheet containing the source data
+	 * @param int	 $sheetOutputIndex 		Can be the number of the sheet to output
 	 * @param string $dataRange				The range containing the source data
 	 * @param string $definitionUniqueId	The unique id appended to create a unique file name of and reference id for the definition cache
 	 * @param int $cacheId					Id held in workbooks
@@ -993,7 +996,7 @@ class Spreadsheet extends \PhpOffice\PhpSpreadsheet\Spreadsheet
 	 * @return bool
 	 * @throws Exception					If there are no row groups or there are conflicts between the row, columns and value groups
 	 */
-	private function createPivotTable( $sheet, $dataRange, $definitionUniqueId, $cacheId, $sharedItems, $colIndex, $rowIndex, $rowGroups = null, $columnGroups = null, $valueGroups = null, $name = "PivotTable1", $dataCaption = 'Data', $showColGrandTotals = true, $showRowGrandTotals = true )
+	private function createPivotTable( $sheet, $sheetOutputIndex, $dataRange, $definitionUniqueId, $cacheId, $sharedItems, $colIndex, $rowIndex, $rowGroups = null, $columnGroups = null, $valueGroups = null, $name = "PivotTable1", $dataCaption = 'Data', $showColGrandTotals = true, $showRowGrandTotals = true )
 	{
 		// Two pivot table examples are shown below after the code.
 		// For more information about the pivotTable element see section 18.10 of
@@ -1393,7 +1396,8 @@ class Spreadsheet extends \PhpOffice\PhpSpreadsheet\Spreadsheet
 		unset( $zip );
 
 		// $pivotTable = $this->addPivotTable( "rId$definitionUniqueId", "xl/pivotTables/pivotTable$definitionUniqueId.xml", $xml, $cacheId, "xl/worksheets/sheet" . ( $this->getIndex( $sheet ) + 1 ) . ".xml" );
-		$pivotTable = $this->addPivotTable( "rId$definitionUniqueId", "xl/pivotTables/pivotTable$definitionUniqueId.xml", $xml, $cacheId, $sheet->getCodeName() );
+
+		$pivotTable = $this->addPivotTable( "rId$definitionUniqueId", "xl/pivotTables/pivotTable$definitionUniqueId.xml", $xml, $cacheId, $sheetOutputIndex->getCodeName() );
 
 		$rId = $this->pivotCacheDefinitionCollection->getPivotCacheIndex( $cacheId );
 		$path = $this->pivotCacheDefinitionCollection->getPivotCacheDefinitionPath( $rId );
